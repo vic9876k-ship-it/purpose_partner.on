@@ -1,0 +1,59 @@
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+    // Users can read/write their own documents
+    match /users/{userId} {
+      allow read, write: if request.auth != null && request.auth.uid == userId;
+    }
+    
+    // Extension pairings - anyone can read, only authenticated can create
+    match /extensionPairings/{code} {
+      allow read: if request.auth != null;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null;
+    }
+    
+    // Partner connections - users can read their own connections
+    match /partnerConnections/{connectionId} {
+      allow read: if request.auth != null && 
+        (resource.data.accountabilityPartnerId == request.auth.uid || 
+         resource.data.partnerId == request.auth.uid);
+      allow create: if request.auth != null && 
+        request.resource.data.accountabilityPartnerId == request.auth.uid;
+      allow update: if request.auth != null;
+    }
+    
+    // Temptation alerts - partners can read alerts for their users
+    match /temptationAlerts/{alertId} {
+      allow read: if request.auth != null && 
+        resource.data.partnerId == request.auth.uid;
+      allow create: if request.auth != null;
+      allow update: if request.auth != null && 
+        resource.data.partnerId == request.auth.uid;
+    }
+    
+    // Encouragements - users can read their own sent/received encouragements
+    match /encouragements/{encouragementId} {
+      allow read: if request.auth != null && 
+        (resource.data.senderId == request.auth.uid || 
+         resource.data.receiverId == request.auth.uid);
+      allow create: if request.auth != null;
+    }
+    
+    // Partners - users can read their own partners
+    match /partners/{partnerId} {
+      allow read: if request.auth != null && 
+        resource.data.userId == request.auth.uid;
+      allow create: if request.auth != null && 
+        request.resource.data.userId == request.auth.uid;
+    }
+    
+    // Victories - users can read their own victories
+    match /victories/{victoryId} {
+      allow read: if request.auth != null && 
+        resource.data.celebratedBy == request.auth.uid;
+      allow create: if request.auth != null && 
+        request.resource.data.celebratedBy == request.auth.uid;
+    }
+  }
+}
